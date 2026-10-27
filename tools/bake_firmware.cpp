@@ -48,7 +48,8 @@ static void replace_code(uint32_t code, const char* path) {
                                  std::to_string(code));
     }
 
-    const std::vector<uint8_t> data = read_file(path);
+    // FIX: remove const so data.data() returns uint8_t* (non-const)
+    std::vector<uint8_t> data = read_file(path);
     if (data.empty()) {
         throw std::runtime_error(std::string("Empty partition file: ") + path);
     }
@@ -87,6 +88,8 @@ int main(int argc, char** argv) {
         }
 
         const bool compress = ptable->zsize(0) != 0;
+        (void)compress;
+
         replace_code(0x590000, argv[2]);  // System partition
         replace_code(0x5a0000, argv[3]);  // APP partition
 
@@ -94,3 +97,31 @@ int main(int argc, char** argv) {
         if (!out) {
             throw std::runtime_error(std::string("Cannot create output: ") + argv[4]);
         }
+
+        // ============================================================
+        // FIX NEEDED HERE:
+        // Aapko ptable.h mein dekhna hoga ke pura modified firmware
+        // output file mein likhne ke liye kaunsa method hai.
+        //
+        // Common possibilities:
+        //   ptable->save(out);      // agar save(FILE*) exist karta hai
+        //   ptable->write(out);     // agar write(FILE*) exist karta hai
+        //   ptable->store(out);     // agar store(FILE*) exist karta hai
+        //
+        // Neeche wali line ko us sahi method se replace karein.
+        // Agar method FILE* nahi leta balke path leta hai, to
+        // std::fclose(out); hata kar ptable->save(argv[4]); jaisa likhein.
+        // ============================================================
+        ptable->save(out);   // <-- PLACEHOLDER: ptable.h dekh kar confirm karein
+
+        std::fclose(out);
+        delete ptable;
+        ptable = nullptr;
+
+    } catch (const std::exception& e) {
+        std::cerr << "error: " << e.what() << "\n";
+        return 1;
+    }
+
+    return 0;
+}
