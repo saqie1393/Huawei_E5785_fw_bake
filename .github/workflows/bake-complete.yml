@@ -22,7 +22,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y g++ qtbase5-dev qt5-qmake libqt5widgets5 zlib1g-dev pkg-config
+          sudo apt-get install -y g++ qtbase5-dev qt5-qmake zlib1g-dev pkg-config
 
       - name: Download original firmware release
         run: |
@@ -31,7 +31,6 @@ jobs:
             -o E5785_original.bin
           test -s E5785_original.bin
 
-      
       - name: Bake APP and System partitions
         run: |
           test -f baker.py
@@ -48,29 +47,31 @@ jobs:
           cp tools/bake_firmware.cpp qhuaweiflash/bake_firmware.cpp
           cd qhuaweiflash
 
+          # sanity: file must be complete (ends with '}')
+          tail -n 1 bake_firmware.cpp | grep -q '}' || {
+            echo "bake_firmware.cpp appears truncated"; exit 1; }
+
           # Ensure QComboBox header is present
           if ! grep -q 'QtWidgets/QComboBox' bake_firmware.cpp; then
             sed -i '1a #include <QtWidgets/QComboBox>' bake_firmware.cpp
           fi
 
-          echo "=== Source verification ==="
-          head -n 8 bake_firmware.cpp
-          grep -n 'QComboBox' bake_firmware.cpp
-
           echo "=== Qt configuration ==="
           pkg-config --cflags Qt5Widgets
           pkg-config --libs Qt5Widgets
 
-          # Compile with PIC and explicitly disable PIE
-          g++ -std=c++11 -fPIC -fno-PIE -U__PIE__ -U__pie__ \
-            -fpermissive \
+          # Compile PIC (required by Qt). Do NOT pass -fno-PIE here.
+          g++ -std=c++11 -fPIC -O2 \
             $(pkg-config --cflags Qt5Widgets) -I. \
-            bake_firmware.cpp ptable.cpp sio.cpp \
-            -o bake_firmware \
+            -c bake_firmware.cpp ptable.cpp sio.cpp
+
+          # Link. -no-pie gives a classic non-PIE executable.
+          g++ -no-pie *.o -o bake_firmware \
             $(pkg-config --libs Qt5Widgets) -lz
 
+          file bake_firmware
           test -x bake_firmware
-          
+
       - name: Replace System and APP and write full firmware
         env:
           QT_QPA_PLATFORM: offscreen
