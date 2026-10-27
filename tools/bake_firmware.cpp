@@ -1,3 +1,11 @@
+// bake_firmware.cpp
+//
+// Replaces the System and APP partitions inside a Huawei E5785 firmware
+// image, using qhuaweiflash's partition-table code.
+//
+// Usage:
+//   bake_firmware ORIGINAL.bin System.E5785.bin APP.E5785.bin OUTPUT.bin
+
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QComboBox>
 
@@ -15,16 +23,22 @@
 #include "ptable.h"
 #include "signver.h"
 
+// ---------------------------------------------------------------------------
+// Globals required by qhuaweiflash's ptable.cpp / sio.cpp
+// ---------------------------------------------------------------------------
 ptable_list* ptable = nullptr;
 int dload_id = -1;
 int32_t signlen = -1;
 char signver_hash[100] = "";
 
-// Stubs for symbols referenced by qhuaweiflash's partition-table code.
+// Stubs for symbols referenced by qhuaweiflash but not needed here.
 void set_modified() {}
 void fdirlist(int) {}
 QComboBox* pselector = nullptr;
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 static std::vector<uint8_t> read_file(const char* path) {
     std::ifstream f(path, std::ios::binary);
     if (!f) {
@@ -34,6 +48,8 @@ static std::vector<uint8_t> read_file(const char* path) {
                                 std::istreambuf_iterator<char>());
 }
 
+// Replace a partition identified by its code (e.g. 0x590000 for System,
+// 0x5a0000 for APP) with the contents of `path`.
 static void replace_code(uint32_t code, const char* path) {
     int idx = -1;
     for (int i = 0; i < ptable->index(); ++i) {
@@ -48,7 +64,8 @@ static void replace_code(uint32_t code, const char* path) {
                                  std::to_string(code));
     }
 
-    // FIX: remove const so data.data() returns uint8_t* (non-const)
+    // NOTE: non-const so data.data() yields uint8_t* for
+    // ptable_list::replace(int, uint8_t*, uint32_t).
     std::vector<uint8_t> data = read_file(path);
     if (data.empty()) {
         throw std::runtime_error(std::string("Empty partition file: ") + path);
@@ -58,11 +75,15 @@ static void replace_code(uint32_t code, const char* path) {
     }
 
     std::cerr << "Replacing code 0x" << std::hex << code << std::dec
-              << " (" << ptable->name(idx) << ") with " << data.size()
-              << " bytes\n";
+              << " (" << reinterpret_cast<const char*>(ptable->name(idx))
+              << ") with " << data.size() << " bytes\n";
+
     ptable->replace(idx, data.data(), static_cast<uint32_t>(data.size()));
 }
 
+// ---------------------------------------------------------------------------
+// main
+// ---------------------------------------------------------------------------
 int main(int argc, char** argv) {
     QApplication app(argc, argv);
 
@@ -73,6 +94,7 @@ int main(int argc, char** argv) {
     }
 
     try {
+        // 1. Load the original firmware's partition table.
         FILE* in = std::fopen(argv[1], "rb");
         if (!in) {
             throw std::runtime_error(std::string("Cannot open original firmware: ") +
@@ -87,39 +109,67 @@ int main(int argc, char** argv) {
             throw std::runtime_error("No valid firmware partitions detected");
         }
 
-        const bool compress = ptable->zsize(0) != 0;
-        (void)compress;
+        // Remember which partitions were compressed in the original image,
+        // so we can write them back the same way.
+        std::vector<bool> was_compressed(ptable->index());
+        for (int i = 0; i < ptable->index(); ++i) {
+            was_compressed[i] = (ptable->zsize(i) != 0);
+        }
 
-        replace_code(0x590000, argv[2]);  // System partition
-        replace_code(0x5a0000, argv[3]);  // APP partition
+        // 2. Swap in the new System and APP images.
+        replace_code(0x590000, argv[2]);  // System
+        replace_code(0x5a0000, argv[3]);  // APP
 
+        // 3. Write the new firmware image.
         FILE* out = std::fopen(argv[4], "wb");
         if (!out) {
             throw std::runtime_error(std::string("Cannot create output: ") + argv[4]);
         }
 
-        // ============================================================
-        // FIX NEEDED HERE:
-        // Aapko ptable.h mein dekhna hoga ke pura modified firmware
-        // output file mein likhne ke liye kaunsa method hai.
-        //
-        // Common possibilities:
-        //   ptable->save(out);      // agar save(FILE*) exist karta hai
-        //   ptable->write(out);     // agar write(FILE*) exist karta hai
-        //   ptable->store(out);     // agar store(FILE*) exist karta hai
-        //
-        // Neeche wali line ko us sahi method se replace karein.
-        // Agar method FILE* nahi leta balke path leta hai, to
-        // std::fclose(out); hata kar ptable->save(argv[4]); jaisa likhein.
-        // ============================================================
-        ptable->save(out);   // <-- PLACEHOLDER: ptable.h dekh kar confirm karein
+        // Copy the original 0x5c-byte file prefix (everything before the
+        // first partition header). findparts() skips this prefix, so it must
+        // be preserved verbatim for the image to remain bootable.
+        {
+            FILE* src = std::fopen(argv[1], "rb");
+            if (!src) {
+                std::fclose(out);
+                throw std::runtime_error("Cannot reopen original firmware");
+            }
+            uint8_t prefix[0x5c];
+            if (std::fread(prefix, 1, sizeof(prefix), src) != sizeof(prefix)) {
+                std::fclose(src);
+                std::fclose(out);
+                throw std::runtime_error("Original firmware too short for prefix");
+            }
+            std::fclose(src);
+            if (std::fwrite(prefix, 1, sizeof(prefix), out) != sizeof(prefix)) {
+                std::fclose(out);
+                throw std::runtime_error("Failed to write output prefix");
+            }
+        }
 
-        std::fclose(out);
+        // Write every partition. Preserve each partition's original
+        // compression state so the resulting image stays compatible with
+        // the device's flasher.
+        for (int i = 0; i < ptable->index(); ++i) {
+            ptable->save_part(i, out, was_compressed[i]);
+        }
+
+        if (std::fclose(out) != 0) {
+            throw std::runtime_error("Failed to finalize output file");
+        }
+
         delete ptable;
         ptable = nullptr;
 
+        std::cerr << "Wrote " << argv[4] << "\n";
+
     } catch (const std::exception& e) {
         std::cerr << "error: " << e.what() << "\n";
+        if (ptable) {
+            delete ptable;
+            ptable = nullptr;
+        }
         return 1;
     }
 
