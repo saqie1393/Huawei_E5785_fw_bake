@@ -42,18 +42,28 @@ jobs:
       - name: Build qhuaweiflash partition writer
         shell: bash
         run: |
+          set -euxo pipefail
+
           git clone --depth 1 https://github.com/forth32/qhuaweiflash.git qhuaweiflash
           cp tools/bake_firmware.cpp qhuaweiflash/bake_firmware.cpp
           cd qhuaweiflash
 
-          echo "Checking QComboBox include:"
+          # Ensure QComboBox header is present
+          if ! grep -q 'QtWidgets/QComboBox' bake_firmware.cpp; then
+            sed -i '1a #include <QtWidgets/QComboBox>' bake_firmware.cpp
+          fi
+
+          echo "=== Source verification ==="
+          head -n 8 bake_firmware.cpp
           grep -n 'QComboBox' bake_firmware.cpp
 
-          echo "Checking Qt flags:"
+          echo "=== Qt configuration ==="
           pkg-config --cflags Qt5Widgets
           pkg-config --libs Qt5Widgets
 
-          g++ -std=c++11 -fPIC -fno-PIE -fpermissive \
+          # Compile with PIC and explicitly disable PIE
+          g++ -std=c++11 -fPIC -fno-PIE -U__PIE__ -U__pie__ \
+            -fpermissive \
             $(pkg-config --cflags Qt5Widgets) -I. \
             bake_firmware.cpp ptable.cpp sio.cpp \
             -o bake_firmware \
