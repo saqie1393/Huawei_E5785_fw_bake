@@ -15,6 +15,7 @@ SYSTEM_FILES_RENAME = []
 SYSTEM_FILES = [
     ("bin/busyboxx", 0, 0, ATTR_IS_FILE | 0o4775),
     ("bin/xtables-multi", 0, 0, ATTR_IS_FILE | 0o775),
+    ("bin/ciadpi", 0, 0, ATTR_IS_FILE | 0o775),
     ("xbin/atc", 0, 0, ATTR_IS_FILE | 0o755),
     ("xbin/adbd", 0, 0, ATTR_IS_FILE | 0o755),
     ("xbin/dropbear", 0, 0, ATTR_IS_FILE | 0o755),
