@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   bake:
@@ -89,3 +89,13 @@ jobs:
           name: E5785-Custom-Firmware
           if-no-files-found: error
           path: E5785_92a_modified_21.191.63.01.375.bin
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v21.191.63.01.375-custom
+          name: "Modified Firmware E5785 21.191.63.01.375"
+          body: "Custom baked firmware with modified System and APP partitions."
+          files: E5785_92a_modified_21.191.63.01.375.bin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
