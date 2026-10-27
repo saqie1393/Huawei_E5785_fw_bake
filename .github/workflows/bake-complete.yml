@@ -31,6 +31,7 @@ jobs:
             -o E5785_original.bin
           test -s E5785_original.bin
 
+      
       - name: Bake APP and System partitions
         run: |
           test -f baker.py
@@ -39,14 +40,18 @@ jobs:
           test -s System.E5785.bin
 
       - name: Build qhuaweiflash partition writer
+        shell: bash
         run: |
           git clone --depth 1 https://github.com/forth32/qhuaweiflash.git qhuaweiflash
           cp tools/bake_firmware.cpp qhuaweiflash/bake_firmware.cpp
           cd qhuaweiflash
-            g++ -std=c++11 -fPIC -fpermissive \
+
+          g++ -std=c++11 -fPIC -fpermissive \
             $(pkg-config --cflags Qt5Widgets) -I. \
             bake_firmware.cpp ptable.cpp sio.cpp \
-            -o bake_firmware $(pkg-config --libs Qt5Widgets) -lz
+            -o bake_firmware \
+            $(pkg-config --libs Qt5Widgets) -lz
+
 
       - name: Replace System and APP and write full firmware
         env:
