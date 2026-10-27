@@ -82,6 +82,7 @@ APP_FILES = [
     ("hijack/scripts/radio_mode.sh", 1000, 1000, ATTR_IS_FILE | 0o775),
     ("hijack/scripts/sms_and_ussd.sh", 1000, 1000, ATTR_IS_FILE | 0o775),
     ("hijack/scripts/wifi.sh", 1000, 1000, ATTR_IS_FILE | 0o775),
+    ("hijack/scripts/Byedpi.sh", 1000, 1000, ATTR_IS_FILE | 0o775),
     ("hijack/scripts/user_scripts.sh", 1000, 1000, ATTR_IS_FILE | 0o775),
     ("hijack/scripts/example.sh", 1000, 1000, ATTR_IS_FILE | 0o775),
     ("hijack/scripts/vpn.sh", 1000, 1000, ATTR_IS_FILE | 0o775),
