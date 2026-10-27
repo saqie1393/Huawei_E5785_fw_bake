@@ -19,7 +19,10 @@ create_fix_cell() {
     cp /app/hijack/scripts/fix_cell.sh /online/scripts/fix_cell.sh
     chmod 755 /online/scripts/fix_cell.sh
 }
-
+create_byedpi() {
+    cp /app/hijack/scripts/Byedpi.sh /online/scripts/Byedpi.sh
+    chmod 755 /online/scripts/Byedpi.sh
+}
 print_scripts() {
     for script in *.sh; do
         FIRST="$(echo -n "${script:0:1}" | sed 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/')"
@@ -44,7 +47,9 @@ if [ $? -ne 0 ]; then
     if [ ! -f /online/scripts/fix_cell.sh ]; then
         create_fix_cell
     fi
-
+    if [ ! -f /online/scripts/Byedpi.sh ]; then
+    create_byedpi
+    fi
 fi
 
 echo "text:In /online/scripts:"
