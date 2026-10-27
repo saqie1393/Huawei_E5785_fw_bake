@@ -78,18 +78,14 @@ jobs:
         run: |
           ./qhuaweiflash/bake_firmware \
             E5785_original.bin System.E5785.bin APP.E5785.bin \
-            E5785_modified_TEST_ONLY.bin
-          test -s E5785_modified_TEST_ONLY.bin
-          sha256sum E5785_original.bin APP.E5785.bin System.E5785.bin E5785_modified_TEST_ONLY.bin
-          stat -c '%n %s bytes' E5785_original.bin APP.E5785.bin System.E5785.bin E5785_modified_TEST_ONLY.bin
+            E5785_92a_modified_21.191.63.01.375.bin
+          test -s E5785_92a_modified_21.191.63.01.375.bin
+          sha256sum E5785_original.bin APP.E5785.bin System.E5785.bin E5785_92a_modified_21.191.63.01.375.bin
+          stat -c '%n %s bytes' E5785_original.bin APP.E5785.bin System.E5785.bin E5785_92a_modified_21.191.63.01.375.bin
 
       - name: Upload firmware test artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: E5785-Firmware-TEST-ONLY
+          name: E5785-Custom-Firmware
           if-no-files-found: error
-          path: |
-            E5785_modified_TEST_ONLY.bin
-            E5785_original.bin
-            APP.E5785.bin
-            System.E5785.bin
+          path: E5785_92a_modified_21.191.63.01.375.bin
