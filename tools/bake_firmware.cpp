@@ -24,10 +24,15 @@
 #include "signver.h"
 
 // ---------------------------------------------------------------------------
-// Globals required by qhuaweiflash's ptable.cpp / sio.cpp
+// Globals
+//
+// NOTE: dload_id is DEFINED in ptable.cpp, so we must NOT redefine it here.
+// It is already declared extern in ptable.h.
+//
+// signlen and signver_hash are normally defined in signver.cpp, which we do
+// not compile/link here, so we provide them.
 // ---------------------------------------------------------------------------
 ptable_list* ptable = nullptr;
-int dload_id = -1;
 int32_t signlen = -1;
 char signver_hash[100] = "";
 
@@ -109,8 +114,7 @@ int main(int argc, char** argv) {
             throw std::runtime_error("No valid firmware partitions detected");
         }
 
-        // Remember which partitions were compressed in the original image,
-        // so we write them back the same way.
+        // Remember which partitions were compressed in the original image.
         std::vector<bool> was_compressed(ptable->index());
         for (int i = 0; i < ptable->index(); ++i) {
             was_compressed[i] = (ptable->zsize(i) != 0);
@@ -127,8 +131,7 @@ int main(int argc, char** argv) {
         }
 
         // Copy the original 0x5c-byte file prefix (everything before the
-        // first partition header). findparts() skips this prefix, so it must
-        // be preserved verbatim for the image to remain bootable.
+        // first partition header). findparts() skips this prefix.
         {
             FILE* src = std::fopen(argv[1], "rb");
             if (!src) {
@@ -148,8 +151,7 @@ int main(int argc, char** argv) {
             }
         }
 
-        // Write every partition, preserving each one's original
-        // compression state.
+        // Write every partition, preserving original compression state.
         for (int i = 0; i < ptable->index(); ++i) {
             ptable->save_part(i, out, was_compressed[i]);
         }
