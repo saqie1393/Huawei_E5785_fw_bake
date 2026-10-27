@@ -48,8 +48,8 @@ static std::vector<uint8_t> read_file(const char* path) {
                                 std::istreambuf_iterator<char>());
 }
 
-// Replace a partition identified by its code (e.g. 0x590000 for System,
-// 0x5a0000 for APP) with the contents of `path`.
+// Replace a partition identified by its code (0x590000 = System,
+// 0x5a0000 = APP) with the contents of `path`.
 static void replace_code(uint32_t code, const char* path) {
     int idx = -1;
     for (int i = 0; i < ptable->index(); ++i) {
@@ -64,7 +64,7 @@ static void replace_code(uint32_t code, const char* path) {
                                  std::to_string(code));
     }
 
-    // NOTE: non-const so data.data() yields uint8_t* for
+    // non-const so data.data() yields uint8_t* for
     // ptable_list::replace(int, uint8_t*, uint32_t).
     std::vector<uint8_t> data = read_file(path);
     if (data.empty()) {
@@ -110,7 +110,7 @@ int main(int argc, char** argv) {
         }
 
         // Remember which partitions were compressed in the original image,
-        // so we can write them back the same way.
+        // so we write them back the same way.
         std::vector<bool> was_compressed(ptable->index());
         for (int i = 0; i < ptable->index(); ++i) {
             was_compressed[i] = (ptable->zsize(i) != 0);
@@ -148,9 +148,8 @@ int main(int argc, char** argv) {
             }
         }
 
-        // Write every partition. Preserve each partition's original
-        // compression state so the resulting image stays compatible with
-        // the device's flasher.
+        // Write every partition, preserving each one's original
+        // compression state.
         for (int i = 0; i < ptable->index(); ++i) {
             ptable->save_part(i, out, was_compressed[i]);
         }
