@@ -51,13 +51,13 @@ APP_FILES_RENAME = [
 ]
 
 APP_FILES = [
-    ("config/wifi/countryChannel.xml", 1000, 1000, ATTR_IS_FILE | 0o775),
-    ("config/wifi/config.xml.e5785", 1000, 1000, ATTR_IS_FILE | 0o775),
+    ("config/E5785Lh-92a/wifi/countryChannel.xml", 1000, 1000, ATTR_IS_FILE | 0o775),
+    ("config/E5785Lh-92a/wifi/config.xml.e5785", 1000, 1000, ATTR_IS_FILE | 0o775),
     ("config/wifi/config.xml.e5885", 1000, 1000, ATTR_IS_FILE | 0o775),
-    ("config/oled", 1000, 1000, ATTR_IS_DIR | 0o755),
-    ("config/oled/animation", 1000, 1000, ATTR_IS_DIR | 0o755),
-    ("config/oled/animation/ani_power_off.xml.e5785", 1000, 1000, ATTR_IS_FILE | 0o775),
-    ("config/oled/animation/welcome.xml.e5785", 1000, 1000, ATTR_IS_FILE | 0o775),
+    ("config/E5785Lh-92a/oled", 1000, 1000, ATTR_IS_DIR | 0o755),
+    ("config/E5785Lh-92a/oled/animation", 1000, 1000, ATTR_IS_DIR | 0o755),
+    ("config/E5785Lh-92a/oled/animation/ani_power_off.xml.e5785", 1000, 1000, ATTR_IS_FILE | 0o775),
+    ("config/E5785Lh-92a/oled/animation/welcome.xml.e5785", 1000, 1000, ATTR_IS_FILE | 0o775),
     ("config/oled/animation/ani_power_off.xml.e5885", 1000, 1000, ATTR_IS_FILE | 0o775),
     ("config/oled/animation/welcome.xml.e5885", 1000, 1000, ATTR_IS_FILE | 0o775),
     ("bin/device", 1000, 1000, ATTR_IS_FILE | 0o775),
