@@ -1,35 +1,21 @@
-#!/system/bin/busyboxx sh
-
-mkdir bin
+#!/system/bin/busybox sh
+# Create bin directory and symlink
+mkdir /bin
 ln -s /system/bin/sh /bin/sh
-
+# Start background process
+/system/sbin/NwInquire &
+# System configurations
 busybox echo 0 > /proc/sys/net/netfilter/nf_conntrack_checksum
-
-temp=$(cat /sys/class/power_supply/battery/temp)
-if [ $temp -eq -30 ]; then
-	echo -ne '\x00\x00\x82\xe5' | dd of=/dev/mem bs=1 seek=2797765824
-fi
-
-mkdir /dev/net && busyboxx mknod /dev/net/tun c 10 200
-mkdir -p /data/userdata/ussd
-chown 1000:1000 /data/userdata/ussd
-
-g_bAtDataLocked=`grep -w -m1 "g_bAtDataLocked" /proc/kallsyms`
-addr=0x${g_bAtDataLocked:0:8}
-dd if=/dev/zero of=/dev/kmem bs=1 seek=$((addr)) count=4
-
-for FILE in /etc/autorun.d/*.sh; do
-    /bin/sh "$FILE"
-done
-
+# Huawei process start
 /etc/huawei_process_start
+# Remount partitions as writable
+mount -o remount,rw /mnvm2:0
+mount -o remount,rw /system
+mount -o remount,rw /app
+# NV tool operations
+balong-nvtool -m 8268:01:00:00:00:02:00:00:00:0A:00:00:00
+# Restore original autorun script
+mv /system/etc/autorun.sh.orig /system/etc/autorun.sh
 
-mv /sbin/adbd /sbin/adbd~
-
-#busyboxx telnetd -l /bin/sh
-#adbd &
-
-mkdir -p /data/dropbear
-dropbear -R
-
-/app/prometheus/start_exporter.sh
+# Reset command
+echo -e "at^reset\r" >/dev/appvcom1
