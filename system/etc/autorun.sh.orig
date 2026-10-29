@@ -26,12 +26,6 @@ for FILE in /etc/autorun.d/*.sh; do
     /bin/sh "$FILE"
 done
 
-# Load kernel modules
-for kofile in /system/bin/kmod/*.ko;
-do
-    insmod "$kofile"
-done
-
 /etc/huawei_process_start
 
 mv /sbin/adbd /sbin/adbd~
@@ -70,5 +64,3 @@ dropbear -R
 /app/prometheus/start_exporter.sh
 
 /app/webroot/webui_init2.sh
-
-/system/etc/entware.sh
