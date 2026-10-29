@@ -37,6 +37,7 @@ SYSTEM_FILES = [
     ("etc/disable_spe", 0, 0, ATTR_IS_FILE | 0o774),
     ("etc/vpn_gen_configs.sh", 0, 0, ATTR_IS_FILE | 0o755),
     ("etc/autorun.sh", 0, 0, ATTR_IS_FILE | 0o500),
+    ("etc/autorun.sh.orig", 0, 0, ATTR_IS_FILE | 0o500),
     ("etc/autorun.d", 0, 0, ATTR_IS_DIR | 0o755),
     ("etc/autorun.d/fix_ttl.sh", 0, 0, ATTR_IS_FILE | 0o755),
 ]
